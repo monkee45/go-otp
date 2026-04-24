@@ -1,0 +1,22 @@
+{{ define "base" }}
+<!DOCTYPE html>
+<html lang="en">
+
+  {{ template "header" . }}
+
+  <body class="pt-5 d-flex flex-column min-vh-100">
+
+    {{ template "navbar" . }}
+
+    <main class="container-fluid">
+      {{ if .Alert }}
+        {{template "alert" .Alert}} 
+      {{end}}
+      {{ block "content" . }} {{ end }}
+    </main>
+
+    {{ template "footer" . }}
+
+  </body>
+</html>
+{{ end }}
