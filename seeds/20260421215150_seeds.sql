@@ -1,7 +1,7 @@
 -- +goose Up
 SELECT 'up SQL query';
 
-INSERT INTO users (user_name, email)
+INSERT INTO users (name, email)
 VALUES
   ('Alice Smith', 'alice@example.com'),
   ('Bob Johnson', 'bob@example.com')

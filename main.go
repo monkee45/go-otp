@@ -39,6 +39,11 @@ func main() {
 	mux.HandleFunc("GET /signup", usersC.New)
 	mux.HandleFunc("POST /signup", usersC.Create)
 
+	mux.HandleFunc("GET /signin", usersC.SignIn)
+	mux.HandleFunc("POST /signin", usersC.ProcessSignIn)
+	mux.HandleFunc("GET /verify", usersC.VerifyOTP)
+	mux.HandleFunc("POST /verify", usersC.ProcessOTP)
+
 	srv := newServer(mux)
 	_, stop := setupGracefulShutdown(srv)
 	defer stop()

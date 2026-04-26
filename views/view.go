@@ -61,7 +61,6 @@ func (v *View) Render(w http.ResponseWriter, r *http.Request, data any) {
 			Yield: data, // we assume that whatever they passed in is for the Yield template
 		}
 	}
-	log.Println("vd: ", vd)
 
 	err := v.Template.ExecuteTemplate(w, "base", vd)
 	if err != nil {

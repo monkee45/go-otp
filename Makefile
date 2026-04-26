@@ -1,5 +1,5 @@
 # ---- Config ----
-DB_NAME := story_dev
+DB_NAME := otp_dev
 DB_USER := michaelwalsh
 DB_PASSWORD := postgres
 DB_HOST := localhost
