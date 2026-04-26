@@ -32,8 +32,6 @@ h2 {
 .pt-150 { padding-top: 150px; } 
 
 .contact-main {
-  background: url("http://3.bp.blogspot.com/_zJ-ykxaHYJQ/TJw34wYR0wI/AAAAAAAAAR4/YVS3UKpRrZU/s1600/dark_forest_desktop_wallpaper_35428.jpg");
-  background-size: cover;
   height: 600px;
   display: flex;
   justify-content: center;
