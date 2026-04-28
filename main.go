@@ -44,6 +44,8 @@ func main() {
 	mux.HandleFunc("GET /verify", usersC.VerifyOTP)
 	mux.HandleFunc("POST /verify", usersC.ProcessOTP)
 
+	mux.HandleFunc("GET /userhome", controllers.RequireSession(usersC.Home))
+
 	srv := newServer(mux)
 	_, stop := setupGracefulShutdown(srv)
 	defer stop()
