@@ -13,7 +13,7 @@ type User struct {
 	Name      string
 	Email     string
 	Otp       []byte
-	OtpExpiry int64
+	OtpExpiry time.Time
 	CreatedAt time.Time
 }
 
@@ -73,12 +73,13 @@ func (udb *UserDBService) FindByEmail(email string) (*User, error) {
 	}
 	// Check if record exists
 	row := udb.DB.QueryRow(`
-		SELECT id, name, email, otp, created_at FROM users WHERE email = $1`, email)
+		SELECT id, name, email, otp, otpexpiry, created_at FROM users WHERE email = $1`, email)
 	err := row.Scan(
 		&user.ID,
 		&user.Name,
 		&user.Email,
 		&user.Otp,
+		&user.OtpExpiry,
 		&user.CreatedAt)
 
 	if err != nil {
@@ -92,10 +93,12 @@ func (udb *UserDBService) FindByEmail(email string) (*User, error) {
 
 func (udb *UserDBService) UpdateOTP(email string, otp []byte) error {
 	// hexString := hex.EncodeToString(otp)
+	otpExpiry := time.Now().Add(5 * time.Minute)
 	_, err := udb.DB.Exec(`
 		UPDATE users 
-		SET otp = $2
-		WHERE email = $1;`, email, otp)
+		SET otp = $2,
+		OtpExpiry = $3
+		WHERE email = $1;`, email, otp, otpExpiry)
 
 	if err != nil {
 		return fmt.Errorf("update One Time Password Failed: %w", err)

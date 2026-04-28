@@ -5,6 +5,7 @@ CREATE TABLE users (
     email TEXT UNIQUE NOT NULL,
     name TEXT,
     otp BYTEA,
+    otpexpiry TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

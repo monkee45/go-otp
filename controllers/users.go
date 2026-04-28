@@ -144,6 +144,17 @@ func (u *UsersController) ProcessOTP(w http.ResponseWriter, r *http.Request) {
 		u.VerifyP.Render(w, r, vd)
 		return
 	}
+	log.Println(time.Now())
+	log.Println(user.OtpExpiry)
+	if time.Now().After(user.OtpExpiry) {
+		vd.Alert = &views.Alert{
+			Level:   views.AlertLvlError,
+			Message: "OTP Code has Expired",
+		}
+		u.UserSignIn.Render(w, r, vd)
+		return
+
+	}
 	if verifyOTP(user.Otp, otp) {
 		otp = ""
 		err = u.UserDBS.UpdateOTP(user.Email, []byte(otp))
