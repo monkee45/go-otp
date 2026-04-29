@@ -39,6 +39,7 @@ func (err ErrUserNotExist) Error() string {
 }
 
 func (udb *UserDBService) Create(user *User) error {
+	log.Printf("--> models.u.Create\n")
 	email := strings.ToLower(user.Email)
 	// Check if email is already taken
 	row := udb.DB.QueryRow(`
@@ -67,7 +68,7 @@ func (udb *UserDBService) Create(user *User) error {
 }
 
 func (udb *UserDBService) FindByEmail(email string) (*User, error) {
-	log.Printf("--> models.FindByEmail\n")
+	log.Printf("--> models.u.FindByEmail\n")
 	email = strings.ToLower(email)
 	user := &User{
 		Email: email,
@@ -90,12 +91,16 @@ func (udb *UserDBService) FindByEmail(email string) (*User, error) {
 		}
 		return nil, err
 	}
+	user.Otp, _ = hex.DecodeString(hexOTP)
+
 	return user, nil
 }
 
 func (udb *UserDBService) UpdateOTP(email string, otp []byte) error {
+	log.Printf("--> models.u.UpdateOTP\n")
 	hexString := hex.EncodeToString(otp)
 	otpExpiry := time.Now().Add(5 * time.Minute)
+
 	_, err := udb.DB.Exec(`
 		UPDATE users 
 		SET otp = $2,
