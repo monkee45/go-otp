@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"strings"
@@ -53,9 +54,9 @@ func (udb *UserDBService) Create(user *User) error {
 	}
 
 	row = udb.DB.QueryRow(`
-		INSERT INTO users (name, email)
-		VALUES ($1, $2) RETURNING id, created_at`,
-		user.Name, user.Email)
+		INSERT INTO users (name, email, otpExpiry)
+		VALUES ($1, $2, $3) RETURNING id, created_at`,
+		user.Name, user.Email, time.Now().AddDate(0, 0, -1))
 
 	err = row.Scan(&user.ID, &user.CreatedAt)
 	if err != nil {
@@ -71,14 +72,15 @@ func (udb *UserDBService) FindByEmail(email string) (*User, error) {
 	user := &User{
 		Email: email,
 	}
+	var hexOTP string
 	// Check if record exists
 	row := udb.DB.QueryRow(`
-		SELECT id, name, email, otp, otpexpiry, created_at FROM users WHERE email = $1`, email)
+		SELECT id, name, email, COALESCE(otp, ''), otpexpiry, created_at FROM users WHERE email = $1`, email)
 	err := row.Scan(
 		&user.ID,
 		&user.Name,
 		&user.Email,
-		&user.Otp,
+		&hexOTP,
 		&user.OtpExpiry,
 		&user.CreatedAt)
 
@@ -92,13 +94,13 @@ func (udb *UserDBService) FindByEmail(email string) (*User, error) {
 }
 
 func (udb *UserDBService) UpdateOTP(email string, otp []byte) error {
-	// hexString := hex.EncodeToString(otp)
+	hexString := hex.EncodeToString(otp)
 	otpExpiry := time.Now().Add(5 * time.Minute)
 	_, err := udb.DB.Exec(`
 		UPDATE users 
 		SET otp = $2,
 		OtpExpiry = $3
-		WHERE email = $1;`, email, otp, otpExpiry)
+		WHERE email = $1;`, email, hexString, otpExpiry)
 
 	if err != nil {
 		return fmt.Errorf("update One Time Password Failed: %w", err)
