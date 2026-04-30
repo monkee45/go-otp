@@ -1,48 +1,46 @@
 {{ define "content" }}
-<div class="contact-main d-flex align-items-center" style="min-height: 100vh;">
-    <div class="container">
-      <div class="row justify-content-center">
-        
-        <div class="col-md-5">
-          <div class="card bg-dark shadow-lg border-0 rounded-4">
-            <div class="card-body p-4">
-  
-              <h4 class="text-white text-center mb-4">Sign In</h4>
-  
-              <form action="/verify" method="POST">
-  
-                <div class="form-floating mb-3">
-                  <input 
-                    type="email" 
-                    name="email" 
-                    class="form-control" 
-                    id="email"
-                    value={{.User.Email}}
-                    required
-                  >
-                  <label for="email">Email address</label>
-                </div>
+  <div class="container"> 
+    <div class="row justify-content-center">
+      
+      <div class="col-md-5">
+        <div class="card bg-dark shadow-lg border-0 rounded-4">
+          <div class="card-body p-4">
 
-                <div class="form-floating mb-3">
-                  <input 
-                    type="text" 
-                    name="otp" 
-                    class="form-control" 
-                    id="otp"
-                    required
-                  >
-                  <label for="otp">One Time Password</label>
-                </div>
+            <h4 class="text-white text-center mb-4">Sign In</h4>
 
-                <button class="btn btn-primary w-100 py-2" type="submit">
-                  Verify OTP
-                </button>
-  
-              </form>
-  
-            </div>
-          </div> 
-        </div>
+            <form action="/verify" method="POST">
+
+              <div class="form-floating mb-3">
+                <input 
+                  type="email" 
+                  name="email" 
+                  class="form-control" 
+                  id="email"
+                  value={{.User.Email}}
+                  required
+                >
+                <label for="email">Email address</label>
+              </div>
+
+              <div class="form-floating mb-3">
+                <input 
+                  type="text" 
+                  name="otp" 
+                  class="form-control" 
+                  id="otp"
+                  required
+                >
+                <label for="otp">One Time Password</label>
+              </div>
+
+              <button class="btn btn-primary w-100 py-2" type="submit">
+                Verify OTP
+              </button>
+
+            </form>
+
+          </div>
+        </div> 
       </div>
     </div>
   </div>

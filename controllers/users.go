@@ -141,6 +141,9 @@ func (u *UsersController) ProcessOTP(w http.ResponseWriter, r *http.Request) {
 			Level:   views.AlertLvlError,
 			Message: err.Error(),
 		}
+		vd.User = &models.User{
+			Email: email,
+		}
 		u.VerifyP.Render(w, r, vd)
 		return
 	}

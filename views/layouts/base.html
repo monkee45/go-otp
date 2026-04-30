@@ -4,14 +4,14 @@
 
   {{ template "header" . }}
 
-  <body class="pt-5 d-flex flex-column min-vh-100">
+  <body class="container-fluid d-flex flex-column min-vh-100">
 
     {{ template "navbar" . }}
-
-    <main class="container-fluid">
-      {{ if .Alert }}
-        {{template "alert" .Alert}} 
-      {{end}}
+    {{ if .Alert }}
+      {{template "alert" .Alert}} 
+    {{end}}
+    <main class="flex-grow-1 d-flex align-items-center justify-content-center">
+      
       {{ block "content" . }} {{ end }}
     </main>
 

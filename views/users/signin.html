@@ -1,39 +1,37 @@
 {{ define "content" }}
-<div class="contact-main d-flex align-items-center" style="min-height: 100vh;">
-    <div class="container">
-      <div class="row justify-content-center">
-        
-        <div class="col-md-5">
-          <div class="card bg-dark shadow-lg border-0 rounded-4">
-            <div class="card-body p-4">  
-              <h4 class="text-white text-center mb-4">Sign In</h4>
-  
-              <form action="/signin" method="POST">
-  
-                <div class="form-floating mb-3">
-                  <input 
-                    type="email" 
-                    name="email" 
-                    class="form-control" 
-                    id="email"
-                    placeholder="name@email.com"
-                    required
-                  >
-                  <label for="email">Email address</label>
-                </div>
-  
-                <button class="btn btn-primary w-100 py-2" type="submit">
-                  Get OTP
-                </button>  
-              </form>  
-            </div>
+  <div class="container">
+    <div class="row justify-content-center">
+      
+      <div class="col-md-5">
+        <div class="card bg-dark shadow-lg border-0 rounded-4">
+          <div class="card-body p-4">  
+            <h4 class="text-white text-center mb-4">Sign In</h4>
+
+            <form action="/signin" method="POST">
+
+              <div class="form-floating mb-3">
+                <input 
+                  type="email" 
+                  name="email" 
+                  class="form-control" 
+                  id="email"
+                  placeholder="name@email.com"
+                  required
+                >
+                <label for="email">Email address</label>
+              </div>
+
+              <button class="btn btn-primary w-100 py-2" type="submit">
+                Get OTP
+              </button>  
+            </form>  
           </div>
-  
-          <p class="text-center mt-3 text-muted">
-            Uses OTP (One Time Password)
-          </p>
         </div>
+
+        <p class="text-center mt-3 text-muted">
+          Uses OTP (One Time Password)
+        </p>
       </div>
+    </div>
   </div>
-</div>
 {{ end }}
