@@ -1,9 +1,11 @@
 {{ define "content" }}
   <div class="container"> 
     <div class="row justify-content-center">
-      
       <div class="col-md-5">
-        <div class="card bg-dark shadow-lg border-0 rounded-4">
+        <div class="text-primary fs-4 mb-3" style="--bs-text-opacity: .6">
+          Step 2 of 2
+        </div>
+          <div class="card bg-dark shadow-lg border-0 rounded-4">
           <div class="card-body p-4">
 
             <h4 class="text-white text-center mb-4">Sign In</h4>
@@ -28,17 +30,19 @@
                   name="otp" 
                   class="form-control" 
                   id="otp"
-                  required
                 >
-                <label for="otp">One Time Password</label>
+                <label for="otp">Verification Code</label>
               </div>
+              <div class="row">
+                <div class="offset-sm-2 col-sm-4">
+                  <input class="btn btn-primary w-100 py-2" type="submit" name="action" value="Sign In">
+                </div>
+                <div class="col-sm-4">
+                  <input class="btn btn-outline-secondary text-white w-100 py-2" type="submit" name="action" value="Resend code">
+                </div>
 
-              <button class="btn btn-primary w-100 py-2" type="submit">
-                Verify OTP
-              </button>
-
+              </div>
             </form>
-
           </div>
         </div> 
       </div>

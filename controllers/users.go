@@ -94,11 +94,7 @@ func (u *UsersController) ProcessSignIn(w http.ResponseWriter, r *http.Request) 
 		u.UserSignIn.Render(w, r, vd)
 		return
 	}
-	otp := utils.GenerateRandomOTP()
-	log.Printf("Ctlrs.ProcessSignIn: OTP: %v\n", otp)
-	hash, _ := utils.HashOTP(otp)
-
-	err = u.UserDBS.UpdateOTP(user.Email, hash)
+	err = generateAndSendOTP(u, user)
 	if err != nil {
 		vd.Alert = &views.Alert{
 			Level:   views.AlertLvlError,
@@ -132,8 +128,11 @@ func (u *UsersController) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 func (u *UsersController) ProcessOTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("--> ProcessOTP\n")
 	var vd views.Data
+	_ = r.ParseForm()
 	email := r.FormValue("email")
 	otp := r.FormValue("otp")
+	buttonValue := r.FormValue("action")
+	log.Printf("ProcessOTP: buttonValue = %v\n", buttonValue)
 
 	user, err := u.UserDBS.FindByEmail(email)
 	if err != nil {
@@ -147,38 +146,60 @@ func (u *UsersController) ProcessOTP(w http.ResponseWriter, r *http.Request) {
 		u.VerifyP.Render(w, r, vd)
 		return
 	}
-	log.Println(time.Now())
-	log.Println(user.OtpExpiry)
-	if time.Now().After(user.OtpExpiry) {
-		vd.Alert = &views.Alert{
-			Level:   views.AlertLvlError,
-			Message: "OTP Code has Expired",
-		}
-		u.UserSignIn.Render(w, r, vd)
-		return
 
-	}
-	if verifyOTP(user.Otp, otp) {
-		otp = ""
-		err = u.UserDBS.UpdateOTP(user.Email, []byte(otp))
+	switch buttonValue {
+	case "Sign In":
+		if time.Now().After(user.OtpExpiry) {
+			vd.Alert = &views.Alert{
+				Level:   views.AlertLvlError,
+				Message: "OTP Code has Expired",
+			}
+			u.UserSignIn.Render(w, r, vd)
+			return
+
+		}
+		if verifyOTP(user.Otp, otp) {
+			otp = ""
+			err = u.UserDBS.UpdateOTP(user.Email, []byte(otp))
+			if err != nil {
+				vd.Alert = &views.Alert{
+					Level:   views.AlertLvlError,
+					Message: err.Error(),
+				}
+				u.VerifyP.Render(w, r, vd)
+				return
+			}
+		} else {
+			vd.Alert = &views.Alert{
+				Level:   views.AlertLvlError,
+				Message: "You entered an invalid One-Time Password",
+			}
+			vd.User = user
+			u.VerifyP.Render(w, r, vd)
+			return
+		}
+		http.Redirect(w, r, "/userhome", http.StatusFound)
+	case "Resend code":
+		log.Println("Inside case: Resend OTP")
+		err = generateAndSendOTP(u, user)
 		if err != nil {
 			vd.Alert = &views.Alert{
 				Level:   views.AlertLvlError,
 				Message: err.Error(),
 			}
-			u.VerifyP.Render(w, r, vd)
+			u.UserSignIn.Render(w, r, vd)
 			return
 		}
-	} else {
 		vd.Alert = &views.Alert{
-			Level:   views.AlertLvlError,
-			Message: "You entered an invalid One-Time Password",
+			Level:   views.AlertLvlSuccess,
+			Message: "New One Time Password Sent",
 		}
 		vd.User = user
 		u.VerifyP.Render(w, r, vd)
 		return
+	default:
+		log.Println("No valid button value ")
 	}
-	http.Redirect(w, r, "/userhome", http.StatusFound)
 }
 
 func verifyOTP(hash []byte, otp string) bool {
@@ -274,4 +295,16 @@ func RequireSession(next http.HandlerFunc) http.HandlerFunc {
 		}
 		next(w, r)
 	})
+}
+
+func generateAndSendOTP(u *UsersController, user *models.User) error {
+	otp := utils.GenerateRandomOTP()
+	log.Printf("Ctlrs.ProcessSignIn: OTP: %v\n", otp)
+	hash, _ := utils.HashOTP(otp)
+
+	err := u.UserDBS.UpdateOTP(user.Email, hash)
+	if err != nil {
+		return err
+	}
+	return nil
 }
