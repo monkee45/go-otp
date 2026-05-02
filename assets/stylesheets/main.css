@@ -1,10 +1,15 @@
-h1 {
-  font-size: 50px;
+.navbar .nav-link:hover {
+  border-bottom: 4px solid #FFD400;
 }
-.home-main {
-  background: url("/assets/images/orda_cave_diving.jpg");
-  background-size: cover;
-  height: 600px;
+
+.nav-fs {
+  font-size: 0.9rem;
+}
+
+h1 {
+  font-size: 60px;
+  font-weight: 900;
+  color: #1a32abd5;
 }
   
 h2 {
@@ -12,38 +17,7 @@ h2 {
   font-weight:300;
 }
 
-.home-secondary {
-  background-image: url("http://1.bp.blogspot.com/-4FOgUNGdOyI/UNGxtc8phbI/AAAAAAAABHY/-1AXITA1xsk/s1600/Bengal+Tiger+7.jpg");
-  background-size: cover;
-  height: 800px;
-}
-
-.about-main {
-    background-image: url("http://paulanorman.com/drafts/book_2007_0A/images_Fiji_Nadi/400x300/Nadi_Bay_Beach_Sunset_Man_IMG_3054.jpg");
-    background-size: cover;
-    background-position: center;
-    height: 600px;
-    display: flex;
-    justify-content: center;
-    align-items: center;  
-}
-
 .mt-150 { margin-top: 150px; } 
 .pt-150 { padding-top: 150px; } 
 
-.contact-main {
-  /* height: 600px; */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.form-group label {
-  font-size: 16px;
-  color: #fff;
-}
-
-form {
-  text-align: left;
-}
 
