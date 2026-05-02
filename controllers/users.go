@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
+	"photos.com/mail"
 	"photos.com/models"
 	"photos.com/utils"
 	"photos.com/views"
@@ -103,7 +104,7 @@ func (u *UsersController) ProcessSignIn(w http.ResponseWriter, r *http.Request) 
 		u.UserSignIn.Render(w, r, vd)
 		return
 	}
-	// send the otp to the users email address
+
 	cookie, _ := createSessionCookie(email)
 	http.SetCookie(w, &cookie)
 
@@ -112,7 +113,7 @@ func (u *UsersController) ProcessSignIn(w http.ResponseWriter, r *http.Request) 
 }
 
 func (u *UsersController) VerifyOTP(w http.ResponseWriter, r *http.Request) {
-	log.Printf("--> VerifyOTP()...\n")
+	log.Printf("--> UserController: VerifyOTP()...\n")
 	var vd views.Data
 	session, ok := readSession(r)
 	if !ok {
@@ -122,17 +123,20 @@ func (u *UsersController) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 		Email: session.Email,
 	}
 	vd.User = &user
+	vd.Alert = &views.Alert{
+		Level:   views.AlertLvlSuccess,
+		Message: "Check your email for a verification code",
+	}
 	u.VerifyP.Render(w, r, vd)
 }
 
 func (u *UsersController) ProcessOTP(w http.ResponseWriter, r *http.Request) {
-	log.Printf("--> ProcessOTP\n")
+	log.Printf("--> UserController: ProcessOTP\n")
 	var vd views.Data
 	_ = r.ParseForm()
 	email := r.FormValue("email")
 	otp := r.FormValue("otp")
 	buttonValue := r.FormValue("action")
-	log.Printf("ProcessOTP: buttonValue = %v\n", buttonValue)
 
 	user, err := u.UserDBS.FindByEmail(email)
 	if err != nil {
@@ -180,7 +184,6 @@ func (u *UsersController) ProcessOTP(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Redirect(w, r, "/userhome", http.StatusFound)
 	case "Resend code":
-		log.Println("Inside case: Resend OTP")
 		err = generateAndSendOTP(u, user)
 		if err != nil {
 			vd.Alert = &views.Alert{
@@ -200,6 +203,37 @@ func (u *UsersController) ProcessOTP(w http.ResponseWriter, r *http.Request) {
 	default:
 		log.Println("No valid button value ")
 	}
+}
+
+func (u *UsersController) Logout(w http.ResponseWriter, r *http.Request) {
+	log.Printf("--> UserController: Logout()...\n")
+	var vd views.Data
+	session, ok := readSession(r)
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+	}
+	user := models.User{
+		Email: session.Email,
+	}
+	clearSession(w)
+	vd.User = &user
+	vd.Alert = &views.Alert{
+		Level:   views.AlertLvlSuccess,
+		Message: user.Email + "successfully logged out",
+	}
+	u.UserSignIn.Render(w, r, vd)
+}
+
+func RequireSession(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		session, ok := readSession(r)
+		if !ok || session.Email == "" {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+		next(w, r)
+	})
 }
 
 func verifyOTP(hash []byte, otp string) bool {
@@ -285,26 +319,17 @@ func clearSession(w http.ResponseWriter) {
 	})
 }
 
-func RequireSession(next http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-		session, ok := readSession(r)
-		if !ok || session.Email == "" {
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
-			return
-		}
-		next(w, r)
-	})
-}
-
 func generateAndSendOTP(u *UsersController, user *models.User) error {
+	emailSubject := "Verification Code"
 	otp := utils.GenerateRandomOTP()
-	log.Printf("Ctlrs.ProcessSignIn: OTP: %v\n", otp)
 	hash, _ := utils.HashOTP(otp)
 
 	err := u.UserDBS.UpdateOTP(user.Email, hash)
 	if err != nil {
 		return err
 	}
+	// using a go routine as smtp.SendMail is very slow
+	// not checking the return code - probably should use an error channel
+	go mail.SendMail(user.Email, emailSubject, otp)
 	return nil
 }
