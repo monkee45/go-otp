@@ -1,50 +1,48 @@
 {{ define "content" }}
-<div class="contact-main d-flex align-items-center" style="min-height: 100vh;">
-  <div class="container">
-    <div class="row justify-content-center">
-      
-      <div class="col-md-5">
-        <div class="card bg-info shadow-lg border-0 rounded-4">
-          <div class="card-body p-4">  
-            <h4 class="text-white text-center mb-4">Sign Up</h4>
+<div class="container">
+  <div class="row mt-5 justify-content-center" >
+    <div class="col-md-5">
+      <div class="card mt-5 bg-info shadow-lg border-0 rounded-4">
+        <div class="card-body p-4">  
+          <h4 class="text-white text-center mb-4">Sign Up</h4>
 
-            <form action="/signup" method="POST">
+          <form action="/signup" method="POST">
 
-              <div class="form-floating mb-3">
-                <input 
-                  type="text" 
-                  name="name" 
-                  class="form-control" 
-                  id="name"
-                  placeholder="Name or Nickname"
-                  required
-                >
-                <label for="name">Name or Nickname</label>
-              </div>
-              <div class="form-floating mb-3">
-                <input 
-                  type="email" 
-                  name="email" 
-                  class="form-control" 
-                  id="email"
-                  placeholder="name@email.com"
-                  required
-                >
-                <label for="email">Email address</label>
-              </div>
+            <div class="form-floating mb-3">
+              <input 
+                type="text" 
+                name="name" 
+                class="form-control" 
+                id="name"
+                placeholder="Name or Nickname"
+                autofocus
+                required
+              >
+              <label for="name">Name or Nickname</label>
+            </div>
+            <div class="form-floating mb-3">
+              <input 
+                type="email" 
+                name="email" 
+                class="form-control" 
+                id="email"
+                placeholder="name@email.com"
+                required
+              >
+              <label for="email">Email address</label>
+            </div>
 
-              <button class="btn btn-secondary w-100 py-2" type="submit">
-                Register
-              </button>  
-            </form>  
-          </div>
+            <button class="btn btn-secondary w-100 py-2" type="submit">
+              Register
+            </button>  
+          </form>  
         </div>
       </div>
-      <p class="text-center mt-3 text-muted fixed-bottom">
-        Get exclusive access to financial advice
-      </p>
-    
     </div>
+    <p class="text-center mt-3 text-muted">
+      Get exclusive access to financial advice
+    </p>
+  
   </div>
 </div>
 {{ end }}
