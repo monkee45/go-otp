@@ -11,7 +11,8 @@
             <div class="form-floating mb-3">
               <input 
                 type="text" 
-                name="name" 
+                name="name"
+                value={{if .User}} "{{.User.Name}}" {{ else }} "" {{end}}
                 class="form-control" 
                 id="name"
                 placeholder="Name or Nickname"
@@ -24,6 +25,7 @@
               <input 
                 type="email" 
                 name="email" 
+                value={{if .User}} "{{.User.Email}}" {{ else }} "" {{end}}
                 class="form-control" 
                 id="email"
                 placeholder="name@email.com"

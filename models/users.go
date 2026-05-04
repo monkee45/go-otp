@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
-	"log"
+	"log/slog"
 	"strings"
 	"time"
 )
@@ -18,8 +18,9 @@ type User struct {
 	CreatedAt time.Time
 }
 
-type UserDBService struct {
-	DB *sql.DB
+type UserService struct {
+	DB     *sql.DB
+	Logger *slog.Logger
 }
 
 type ErrEmailTaken struct {
@@ -38,23 +39,19 @@ func (err ErrUserNotExist) Error() string {
 	return fmt.Sprintf("User address %q does not exist", err.Email)
 }
 
-func (udb *UserDBService) Create(user *User) error {
-	log.Printf("--> models.u.Create\n")
+func (userService *UserService) Create(user *User) error {
 	email := strings.ToLower(user.Email)
-	// Check if email is already taken
-	row := udb.DB.QueryRow(`
-		SELECT id FROM users WHERE email = $1`, email)
-	var id int
-	err := row.Scan(&id)
-	if err != sql.ErrNoRows {
-		if err == nil {
-			return ErrEmailTaken{Email: email}
-		} else {
-			return err
+	existingUser, err := userService.FindByEmail(email)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return ErrUserNotExist{Email: email}
 		}
 	}
+	if existingUser != nil {
+		return ErrEmailTaken{Email: email}
+	}
 
-	row = udb.DB.QueryRow(`
+	row := userService.DB.QueryRow(`
 		INSERT INTO users (name, email, otpExpiry)
 		VALUES ($1, $2, $3) RETURNING id, created_at`,
 		user.Name, user.Email, time.Now().AddDate(0, 0, -1))
@@ -63,19 +60,18 @@ func (udb *UserDBService) Create(user *User) error {
 	if err != nil {
 		return fmt.Errorf("error creating user: %w", err)
 	}
-
+	userService.Logger.Info("Create New User: ", "Email", user.Email)
 	return nil
 }
 
-func (udb *UserDBService) FindByEmail(email string) (*User, error) {
-	log.Printf("--> models.u.FindByEmail\n")
+func (userService *UserService) FindByEmail(email string) (*User, error) {
 	email = strings.ToLower(email)
 	user := &User{
 		Email: email,
 	}
 	var hexOTP string
 	// Check if record exists
-	row := udb.DB.QueryRow(`
+	row := userService.DB.QueryRow(`
 		SELECT id, name, email, COALESCE(otp, ''), otpexpiry, created_at FROM users WHERE email = $1`, email)
 	err := row.Scan(
 		&user.ID,
@@ -87,7 +83,7 @@ func (udb *UserDBService) FindByEmail(email string) (*User, error) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, ErrUserNotExist{Email: email}
+			return nil, err
 		}
 		return nil, err
 	}
@@ -96,12 +92,11 @@ func (udb *UserDBService) FindByEmail(email string) (*User, error) {
 	return user, nil
 }
 
-func (udb *UserDBService) UpdateOTP(email string, otp []byte) error {
-	log.Printf("--> models.u.UpdateOTP\n")
+func (userService *UserService) UpdateOTP(email string, otp []byte) error {
 	hexString := hex.EncodeToString(otp)
 	otpExpiry := time.Now().Add(5 * time.Minute)
 
-	_, err := udb.DB.Exec(`
+	_, err := userService.DB.Exec(`
 		UPDATE users 
 		SET otp = $2,
 		OtpExpiry = $3

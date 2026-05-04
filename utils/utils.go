@@ -3,7 +3,10 @@ package utils
 import (
 	"crypto/rand"
 	"fmt"
+	"log/slog"
 	"math/big"
+	"os"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -29,4 +32,26 @@ func HashOTP(otp string) ([]byte, error) {
 
 func CompareOTP(hash []byte, otp string) bool {
 	return bcrypt.CompareHashAndPassword(hash, []byte(otp)) == nil
+}
+
+// create anew logger that will log to a given logfile
+func NewLogger(logfile string) *slog.Logger {
+	const layout = "2006-01-02"
+	t := time.Now()
+	fname := logfile + "-" + t.Format(layout) + ".log"
+	// Open (or create) a log file
+	file, err := os.OpenFile(fname, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		panic(err)
+	}
+
+	// Create a handler that writes to the file
+	handler := slog.NewTextHandler(file, &slog.HandlerOptions{
+		Level: slog.LevelInfo, // minimum log level
+	})
+
+	// Create a logger using that handler
+	logger := slog.New(handler)
+
+	return logger
 }

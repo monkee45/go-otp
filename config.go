@@ -56,7 +56,6 @@ func LoadConfig(configReq bool) Config {
 		if configReq {
 			panic(err)
 		}
-		fmt.Println("Using the default config ....")
 		return DefaultConfig()
 	}
 	var c Config
@@ -65,6 +64,5 @@ func LoadConfig(configReq bool) Config {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Successfully loaded .config")
 	return c
 }

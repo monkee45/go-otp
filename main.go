@@ -3,31 +3,41 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 
 	"photos.com/controllers"
+	"photos.com/loggerctx"
 	"photos.com/models"
+	"photos.com/utils"
 )
 
 func main() {
 	cfg := LoadConfig(false)
 	dbCfg := cfg.Database
+	// setup the logger
+	logger := utils.NewLogger("logfile")
+	ctx := loggerctx.WithLogger(context.Background(), logger)
+	slog.SetDefault(logger)
 
 	db, err := models.Open(dbCfg.ConnectionInfo())
 	if err != nil {
+		logger.Error("Failed to open Database", "Error:", err)
 		panic(err)
 	}
 	defer db.Close()
-
 	// create NewUserService
-	userDBS := models.UserDBService{
-		DB: db,
+	userService := models.UserService{
+		DB:     db,
+		Logger: logger,
 	}
-	usersC := controllers.NewUserController(userDBS)
+	logger.Info("Setting up the Controllers")
+	usersC := controllers.NewUserController(userService)
 	staticC := controllers.NewStaticController()
 
+	logger.Info("Setting up the Mux")
 	mux := http.NewServeMux()
 	// asset files
 	fs := http.FileServer(http.Dir("./assets"))
@@ -48,9 +58,10 @@ func main() {
 	mux.HandleFunc("GET /logout", usersC.Logout)
 
 	srv := newServer(mux)
-	_, stop := setupGracefulShutdown(srv)
+	logger.Info("calling setupGracefulShutdown")
+	_, stop := setupGracefulShutdown(ctx, srv)
 	defer stop()
-	startServer(srv)
+	startServer(ctx, srv)
 }
 
 func newServer(handler http.Handler) *http.Server {
@@ -60,21 +71,25 @@ func newServer(handler http.Handler) *http.Server {
 	}
 }
 
-func setupGracefulShutdown(srv *http.Server) (context.Context, context.CancelFunc) {
+func setupGracefulShutdown(logctx context.Context, srv *http.Server) (context.Context, context.CancelFunc) {
+	logger := loggerctx.LoggerFromContext(logctx)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 
 	go func() {
 		<-ctx.Done()
-		log.Println("received shutdown signal")
+		logger.Info("received shutdown signal...")
+		// log.Println("received shutdown signal")
 		if err := srv.Shutdown(context.Background()); err != nil {
-			log.Printf("shutdown error: %v", err)
+			logger.Error("Shutdown error ", "Error: ", err)
 		}
+		logger.Info("HTTP server stopped")
 	}()
 	return ctx, stop
 }
 
-func startServer(srv *http.Server) {
-	log.Println("starting the server...")
+func startServer(ctx context.Context, srv *http.Server) {
+	logger := loggerctx.LoggerFromContext(ctx)
+	logger.Info("starting the server...")
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 		log.Fatalf("HTTP server ListenAndServe: %v", err)
 	}

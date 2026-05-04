@@ -20,11 +20,11 @@ import (
 const sessionSecret = "super-secret-login-hash-key"
 
 type UsersController struct {
-	NewUser    *views.View
-	UserSignIn *views.View
-	UserHome   *views.View
-	VerifyP    *views.View
-	UserDBS    *models.UserDBService
+	NewUser     *views.View
+	UserSignIn  *views.View
+	UserHome    *views.View
+	VerifyP     *views.View
+	UserService *models.UserService
 }
 
 type SignupForm struct {
@@ -37,13 +37,13 @@ type SessionData struct {
 	Expiry int64  `json:"expiry"`
 }
 
-func NewUserController(newUserDBS models.UserDBService) *UsersController {
+func NewUserController(newUserService models.UserService) *UsersController {
 	return &UsersController{
-		NewUser:    views.NewView("users/new.html"),
-		UserSignIn: views.NewView("users/signin.html"),
-		UserHome:   views.NewView("users/userhome.html"),
-		VerifyP:    views.NewView("users/verifyotp.html"),
-		UserDBS:    &newUserDBS,
+		NewUser:     views.NewView("users/new.html"),
+		UserSignIn:  views.NewView("users/signin.html"),
+		UserHome:    views.NewView("users/userhome.html"),
+		VerifyP:     views.NewView("users/verifyotp.html"),
+		UserService: &newUserService,
 	}
 }
 
@@ -58,11 +58,15 @@ func (u *UsersController) Create(w http.ResponseWriter, r *http.Request) {
 		Name:  r.FormValue("name"),
 		Email: r.FormValue("email"),
 	}
-	err := u.UserDBS.Create(&user)
+	err := u.UserService.Create(&user)
 	if err != nil {
 		vd.Alert = &views.Alert{
 			Level:   views.AlertLvlError,
 			Message: err.Error(),
+		}
+		vd.User = &models.User{
+			Name:  user.Name,
+			Email: user.Email,
 		}
 		u.NewUser.Render(w, r, vd)
 		return
@@ -71,7 +75,8 @@ func (u *UsersController) Create(w http.ResponseWriter, r *http.Request) {
 		Level:   views.AlertLvlSuccess,
 		Message: "Sign up successful!",
 	}
-	u.NewUser.Render(w, r, vd)
+
+	u.UserSignIn.Render(w, r, vd)
 }
 
 func (u *UsersController) SignIn(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +91,7 @@ func (u *UsersController) Home(w http.ResponseWriter, r *http.Request) {
 func (u *UsersController) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 	var vd views.Data
 	email := r.FormValue("email")
-	user, err := u.UserDBS.FindByEmail(email)
+	user, err := u.UserService.FindByEmail(email)
 	if err != nil {
 		vd.Alert = &views.Alert{
 			Level:   views.AlertLvlError,
@@ -113,7 +118,6 @@ func (u *UsersController) ProcessSignIn(w http.ResponseWriter, r *http.Request) 
 }
 
 func (u *UsersController) VerifyOTP(w http.ResponseWriter, r *http.Request) {
-	log.Printf("--> UserController: VerifyOTP()...\n")
 	var vd views.Data
 	session, ok := readSession(r)
 	if !ok {
@@ -138,7 +142,7 @@ func (u *UsersController) ProcessOTP(w http.ResponseWriter, r *http.Request) {
 	otp := r.FormValue("otp")
 	buttonValue := r.FormValue("action")
 
-	user, err := u.UserDBS.FindByEmail(email)
+	user, err := u.UserService.FindByEmail(email)
 	if err != nil {
 		vd.Alert = &views.Alert{
 			Level:   views.AlertLvlError,
@@ -164,7 +168,7 @@ func (u *UsersController) ProcessOTP(w http.ResponseWriter, r *http.Request) {
 		}
 		if verifyOTP(user.Otp, otp) {
 			otp = ""
-			err = u.UserDBS.UpdateOTP(user.Email, []byte(otp))
+			err = u.UserService.UpdateOTP(user.Email, []byte(otp))
 			if err != nil {
 				vd.Alert = &views.Alert{
 					Level:   views.AlertLvlError,
@@ -324,7 +328,7 @@ func generateAndSendOTP(u *UsersController, user *models.User) error {
 	otp := utils.GenerateRandomOTP()
 	hash, _ := utils.HashOTP(otp)
 
-	err := u.UserDBS.UpdateOTP(user.Email, hash)
+	err := u.UserService.UpdateOTP(user.Email, hash)
 	if err != nil {
 		return err
 	}

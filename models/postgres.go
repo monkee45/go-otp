@@ -15,13 +15,11 @@ type Services struct {
 func Open(psqlInfo string) (*sql.DB, error) {
 	sqldb, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
-		return nil, fmt.Errorf("opening SQL DB connection: %w", err)
+		return nil, fmt.Errorf("Error opening SQL DB connection: %v.  Error: %v", psqlInfo, err)
 	}
 	err = sqldb.Ping()
 	if err != nil {
-		return nil, fmt.Errorf("could not contact database, %w", err)
-	} else {
-		log.Println("able to contact the database")
+		return nil, fmt.Errorf("Could not ping database: %v.  Error: %v", psqlInfo, err)
 	}
 
 	return sqldb, err
@@ -29,5 +27,5 @@ func Open(psqlInfo string) (*sql.DB, error) {
 
 func (s *Services) Close() {
 	s.db.Close()
-	log.Printf("Database closed!")
+	log.Printf("Database closed")
 }

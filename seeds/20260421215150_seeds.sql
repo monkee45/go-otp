@@ -1,9 +1,9 @@
 -- +goose Up
 SELECT 'up SQL query';
 
-INSERT INTO users (name, email, otpExpiry)
+INSERT INTO users (name, email)
 VALUES
-  ('Alice Smith', 'alice@example.com', ),
+  ('Alice Smith', 'alice@example.com'),
   ('Bob Johnson', 'bob@example.com')
 ON CONFLICT (email) DO NOTHING;
 
