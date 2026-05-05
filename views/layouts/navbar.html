@@ -24,10 +24,21 @@
         <li class="nav-item">
           <a class="nav-link ms-3 nav-fs" href="/about">About</a>
         </li>
-        <li class="nav-item ">
-          <a class="btn btn-dark ms-3" href="/signin">Log In</a>
-        </li>
-
+        {{if .User}}
+          {{if .User.ID}}
+            <li class="nav-item ">
+              <a class="btn btn-secondary ms-3" href="/logout">Log Out</a>
+            </li>
+          {{ else }}
+            <li class="nav-item ">
+              <a class="btn btn-dark ms-3" href="/signin">Log In</a>
+            </li>
+          {{ end }}
+        {{ else }}
+          <li class="nav-item ">
+            <a class="btn btn-dark ms-3" href="/signin">Log In</a>
+          </li>
+        {{ end }}
       </ul>
 
     </div>

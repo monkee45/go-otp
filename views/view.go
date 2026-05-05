@@ -51,7 +51,6 @@ func layoutFiles() []string {
 
 func (v *View) Render(w http.ResponseWriter, r *http.Request, data any) {
 	var vd Data
-
 	switch d := data.(type) {
 	case Data:
 		vd = d
