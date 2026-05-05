@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -47,11 +48,19 @@ func NewUserController(newUserService models.UserService) *UsersController {
 	}
 }
 
+// New is used to render the form where a user can create a new user account
+//
+// GET /signup
 func (u *UsersController) New(w http.ResponseWriter, r *http.Request) {
 	var form SignupForm
 	u.NewUser.Render(w, r, form)
 }
 
+// ****** CREATE ******
+// Create is used to process the signup form when a user submits it.
+// This is used to create a new User account
+//
+// POST /signin
 func (u *UsersController) Create(w http.ResponseWriter, r *http.Request) {
 	var vd views.Data
 	user := models.User{
@@ -79,14 +88,20 @@ func (u *UsersController) Create(w http.ResponseWriter, r *http.Request) {
 	u.UserSignIn.Render(w, r, vd)
 }
 
+// ***** SignIn *****
+// SignIn is used to render the first stage of the login process
+// GET /signin
+
 func (u *UsersController) SignIn(w http.ResponseWriter, r *http.Request) {
 	var form SignupForm
 	u.UserSignIn.Render(w, r, form)
 }
 
-func (u *UsersController) Home(w http.ResponseWriter, r *http.Request) {
-	u.UserHome.Render(w, r, nil)
-}
+// ***** ProcessSignIn *****
+// ProcessSignIn is used to validate the email, generate and
+// send a one-time password to the users email, create the session cookie
+// and redirect to the OTP entry screen
+// POST /signin
 
 func (u *UsersController) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 	var vd views.Data
@@ -117,6 +132,12 @@ func (u *UsersController) ProcessSignIn(w http.ResponseWriter, r *http.Request) 
 	http.Redirect(w, r, "/verify", http.StatusSeeOther)
 }
 
+// ***** VerifyOTP *****
+// VerifyOTP gets the user email from the session cookie
+// It re-displays the email address in the email entry field and adds
+// a new field for the entry of the One-Time Password
+// GET /verify
+
 func (u *UsersController) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 	var vd views.Data
 	session, ok := readSession(r)
@@ -134,7 +155,13 @@ func (u *UsersController) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 	u.VerifyP.Render(w, r, vd)
 }
 
-func (u *UsersController) ProcessOTP(w http.ResponseWriter, r *http.Request) {
+// ***** ConfirmOTP *****
+// ConfirmOTP is used to get the user-entered OTP value and determine
+// if they have pressed the "SignIn" or "Resend Code" button
+// In the case of "Resend", we sent a completely new OTP
+// POST /verify
+
+func (u *UsersController) ConfirmOTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("--> UserController: ProcessOTP\n")
 	var vd views.Data
 	_ = r.ParseForm()
@@ -186,7 +213,10 @@ func (u *UsersController) ProcessOTP(w http.ResponseWriter, r *http.Request) {
 			u.VerifyP.Render(w, r, vd)
 			return
 		}
+		vd.User = user
+		fmt.Println("Rendering User Home after successful login")
 		http.Redirect(w, r, "/userhome", http.StatusFound)
+		// u.UserHome.Render(w, r, vd)
 	case "Resend code":
 		err = generateAndSendOTP(u, user)
 		if err != nil {
@@ -202,11 +232,26 @@ func (u *UsersController) ProcessOTP(w http.ResponseWriter, r *http.Request) {
 			Message: "New One Time Password Sent",
 		}
 		vd.User = user
+		fmt.Println("Re-Rendering VerifyOTP after new code request")
 		u.VerifyP.Render(w, r, vd)
-		return
 	default:
 		log.Println("No valid button value ")
 	}
+}
+
+func (u *UsersController) Home(w http.ResponseWriter, r *http.Request) {
+	var vd views.Data
+	session, ok := readSession(r)
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+	}
+	user, err := u.UserService.FindByEmail(session.Email)
+	if err != nil {
+		http.Error(w, "Something went wrong!", http.StatusInternalServerError)
+		return
+	}
+	vd.User = user
+	u.UserHome.Render(w, r, vd)
 }
 
 func (u *UsersController) Logout(w http.ResponseWriter, r *http.Request) {
@@ -220,7 +265,7 @@ func (u *UsersController) Logout(w http.ResponseWriter, r *http.Request) {
 		Email: session.Email,
 	}
 	clearSession(w)
-	vd.User = &user
+	vd.User = nil
 	vd.Alert = &views.Alert{
 		Level:   views.AlertLvlSuccess,
 		Message: user.Email + "successfully logged out",
@@ -332,6 +377,7 @@ func generateAndSendOTP(u *UsersController, user *models.User) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("OTP Code: ", otp)
 	// using a go routine as smtp.SendMail is very slow
 	// not checking the return code - probably should use an error channel
 	go mail.SendMail(user.Email, emailSubject, otp)

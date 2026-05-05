@@ -83,9 +83,9 @@ func (userService *UserService) FindByEmail(email string) (*User, error) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, err
+			return nil, ErrUserNotExist{Email: email}
 		}
-		return nil, err
+		return nil, ErrUserNotExist{Email: email}
 	}
 	user.Otp, _ = hex.DecodeString(hexOTP)
 
