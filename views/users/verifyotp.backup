@@ -10,6 +10,20 @@
 
             <h4 class="text-white text-center mb-4">Sign In</h4>
 
+<!-- Delete 
+<form action="/submit" method="POST">
+  <div class="form-group">
+      <label for="inputData">Data:</label>
+      <input type="text" class="form-control" id="inputData" name="data">
+  </div>
+  <button type="submit" class="btn btn-primary">Submit (POST)</button>
+</form>
+
+<form action="/retrieve" method="GET">
+  <button type="submit" class="btn btn-secondary">Retrieve (GET)</button>
+</form>
+end Delete -->
+
             <form action="/verify" method="POST">
 
               <div class="form-floating mb-3">

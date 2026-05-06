@@ -51,15 +51,16 @@ func main() {
 
 	mux.HandleFunc("GET /signin", usersC.SignIn)
 	mux.HandleFunc("POST /signin", usersC.ProcessSignIn)
-	mux.HandleFunc("GET /verify", usersC.VerifyOTP)
+	mux.HandleFunc("GET /verify", usersC.GetUserOTP)
 	mux.HandleFunc("POST /verify", usersC.ConfirmOTP)
+	mux.HandleFunc("POST /resend", usersC.ProcessSignIn)
 
 	mux.HandleFunc("GET /userhome", controllers.RequireSession(usersC.Home))
 	mux.HandleFunc("GET /logout", usersC.Logout)
 
 	srv := newServer(mux)
 	logger.Info("calling setupGracefulShutdown")
-	_, stop := setupGracefulShutdown(ctx, srv)
+	_, stop := setupGracefulShutdown(srv, ctx)
 	defer stop()
 	startServer(ctx, srv)
 }
@@ -71,7 +72,7 @@ func newServer(handler http.Handler) *http.Server {
 	}
 }
 
-func setupGracefulShutdown(logctx context.Context, srv *http.Server) (context.Context, context.CancelFunc) {
+func setupGracefulShutdown(srv *http.Server, logctx context.Context) (context.Context, context.CancelFunc) {
 	logger := loggerctx.LoggerFromContext(logctx)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 
