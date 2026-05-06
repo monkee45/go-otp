@@ -59,7 +59,7 @@ func main() {
 
 	srv := newServer(mux)
 	logger.Info("calling setupGracefulShutdown")
-	_, stop := setupGracefulShutdown(ctx, srv)
+	_, stop := setupGracefulShutdown(srv, ctx)
 	defer stop()
 	startServer(ctx, srv)
 }
@@ -71,7 +71,7 @@ func newServer(handler http.Handler) *http.Server {
 	}
 }
 
-func setupGracefulShutdown(logctx context.Context, srv *http.Server) (context.Context, context.CancelFunc) {
+func setupGracefulShutdown(srv *http.Server, logctx context.Context) (context.Context, context.CancelFunc) {
 	logger := loggerctx.LoggerFromContext(logctx)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 

@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -115,7 +115,7 @@ func (u *UsersController) ProcessSignIn(w http.ResponseWriter, r *http.Request) 
 		u.UserSignIn.Render(w, r, vd)
 		return
 	}
-	err = generateAndSendOTP(u, user)
+	err = generateAndSendOTP(u, user, u.UserService.Logger)
 	if err != nil {
 		vd.Alert = &views.Alert{
 			Level:   views.AlertLvlError,
@@ -162,7 +162,6 @@ func (u *UsersController) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 // POST /verify
 
 func (u *UsersController) ConfirmOTP(w http.ResponseWriter, r *http.Request) {
-	log.Printf("--> UserController: ProcessOTP\n")
 	var vd views.Data
 	_ = r.ParseForm()
 	email := r.FormValue("email")
@@ -218,7 +217,7 @@ func (u *UsersController) ConfirmOTP(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/userhome", http.StatusFound)
 		// u.UserHome.Render(w, r, vd)
 	case "Resend code":
-		err = generateAndSendOTP(u, user)
+		err = generateAndSendOTP(u, user, u.UserService.Logger)
 		if err != nil {
 			vd.Alert = &views.Alert{
 				Level:   views.AlertLvlError,
@@ -235,7 +234,6 @@ func (u *UsersController) ConfirmOTP(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Re-Rendering VerifyOTP after new code request")
 		u.VerifyP.Render(w, r, vd)
 	default:
-		log.Println("No valid button value ")
 	}
 }
 
@@ -255,7 +253,6 @@ func (u *UsersController) Home(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u *UsersController) Logout(w http.ResponseWriter, r *http.Request) {
-	log.Printf("--> UserController: Logout()...\n")
 	var vd views.Data
 	session, ok := readSession(r)
 	if !ok {
@@ -368,7 +365,7 @@ func clearSession(w http.ResponseWriter) {
 	})
 }
 
-func generateAndSendOTP(u *UsersController, user *models.User) error {
+func generateAndSendOTP(u *UsersController, user *models.User, logger *slog.Logger) error {
 	emailSubject := "Verification Code"
 	otp := utils.GenerateRandomOTP()
 	hash, _ := utils.HashOTP(otp)
@@ -380,6 +377,6 @@ func generateAndSendOTP(u *UsersController, user *models.User) error {
 	fmt.Println("OTP Code: ", otp)
 	// using a go routine as smtp.SendMail is very slow
 	// not checking the return code - probably should use an error channel
-	go mail.SendMail(user.Email, emailSubject, otp)
+	go mail.SendMail(user.Email, emailSubject, otp, logger)
 	return nil
 }

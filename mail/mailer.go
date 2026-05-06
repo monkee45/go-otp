@@ -1,12 +1,15 @@
 package mail
 
 import (
-	"log"
+	"log/slog"
 	"net/smtp"
 )
 
-func SendMail(recipient string, subject string, messageBody string) error {
-	log.Printf("SendMail with \nreciepient: %v\nsubject: %v\nbody: %v\n", recipient, subject, messageBody)
+// *** SendMail ***
+// connects to Google Mail API. Uses the passed parameters to construct an email
+// It call stmp.SendMail to send the email and returns any error
+
+func SendMail(recipient string, subject string, messageBody string, logger *slog.Logger) {
 	// SMTP server configuration
 	smtpHost := "smtp.gmail.com"
 	smtpPort := "587"
@@ -27,12 +30,10 @@ func SendMail(recipient string, subject string, messageBody string) error {
 	auth := smtp.PlainAuth("", username, password, smtpHost)
 
 	// Send email
-	log.Printf("Calling smtp.Sendmail...\n")
 
 	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, message)
 	if err != nil {
-		return err
+		logger.Error("mail.SendMail()", "Failed to send email", err)
 	}
 
-	return nil
 }
