@@ -43,7 +43,7 @@ func NewUserController(newUserService models.UserService) *UsersController {
 		NewUser:     views.NewView("users/new.html"),
 		UserSignIn:  views.NewView("users/signin.html"),
 		UserHome:    views.NewView("users/userhome.html"),
-		VerifyP:     views.NewView("users/verifyotp.html"),
+		VerifyP:     views.NewView("users/getuserotp.html"),
 		UserService: &newUserService,
 	}
 }
@@ -124,21 +124,19 @@ func (u *UsersController) ProcessSignIn(w http.ResponseWriter, r *http.Request) 
 		u.UserSignIn.Render(w, r, vd)
 		return
 	}
-
 	cookie, _ := createSessionCookie(email)
 	http.SetCookie(w, &cookie)
-
 	// redirect to the the OTP validation screen/page
 	http.Redirect(w, r, "/verify", http.StatusSeeOther)
 }
 
-// ***** VerifyOTP *****
-// VerifyOTP gets the user email from the session cookie
+// ***** GetUserOTP *****
+// GetUserOTP gets the user email from the session cookie
 // It re-displays the email address in the email entry field and adds
 // a new field for the entry of the One-Time Password
 // GET /verify
 
-func (u *UsersController) VerifyOTP(w http.ResponseWriter, r *http.Request) {
+func (u *UsersController) GetUserOTP(w http.ResponseWriter, r *http.Request) {
 	var vd views.Data
 	session, ok := readSession(r)
 	if !ok {
@@ -166,8 +164,6 @@ func (u *UsersController) ConfirmOTP(w http.ResponseWriter, r *http.Request) {
 	_ = r.ParseForm()
 	email := r.FormValue("email")
 	otp := r.FormValue("otp")
-	buttonValue := r.FormValue("action")
-
 	user, err := u.UserService.FindByEmail(email)
 	if err != nil {
 		vd.Alert = &views.Alert{
@@ -180,61 +176,40 @@ func (u *UsersController) ConfirmOTP(w http.ResponseWriter, r *http.Request) {
 		u.VerifyP.Render(w, r, vd)
 		return
 	}
-
-	switch buttonValue {
-	case "Sign In":
-		if time.Now().After(user.OtpExpiry) {
-			vd.Alert = &views.Alert{
-				Level:   views.AlertLvlError,
-				Message: "OTP Code has Expired",
-			}
-			u.UserSignIn.Render(w, r, vd)
-			return
-
+	// check OTP expiry
+	if time.Now().After(user.OtpExpiry) {
+		vd.Alert = &views.Alert{
+			Level:   views.AlertLvlError,
+			Message: "OTP Code has Expired",
 		}
-		if verifyOTP(user.Otp, otp) {
-			otp = ""
-			err = u.UserService.UpdateOTP(user.Email, []byte(otp))
-			if err != nil {
-				vd.Alert = &views.Alert{
-					Level:   views.AlertLvlError,
-					Message: err.Error(),
-				}
-				u.VerifyP.Render(w, r, vd)
-				return
-			}
-		} else {
-			vd.Alert = &views.Alert{
-				Level:   views.AlertLvlError,
-				Message: "You entered an invalid One-Time Password",
-			}
-			vd.User = user
-			u.VerifyP.Render(w, r, vd)
-			return
-		}
-		vd.User = user
-		fmt.Println("Rendering User Home after successful login")
-		http.Redirect(w, r, "/userhome", http.StatusFound)
-		// u.UserHome.Render(w, r, vd)
-	case "Resend code":
-		err = generateAndSendOTP(u, user, u.UserService.Logger)
+		u.UserSignIn.Render(w, r, vd)
+		return
+
+	}
+	// compare entered OTP with OTP from database
+	if compareHashAndOTP(user.Otp, otp) {
+		otp = ""
+		err = u.UserService.UpdateOTP(user.Email, []byte(otp))
 		if err != nil {
 			vd.Alert = &views.Alert{
 				Level:   views.AlertLvlError,
 				Message: err.Error(),
 			}
-			u.UserSignIn.Render(w, r, vd)
+			u.VerifyP.Render(w, r, vd)
 			return
 		}
+	} else {
 		vd.Alert = &views.Alert{
-			Level:   views.AlertLvlSuccess,
-			Message: "New One Time Password Sent",
+			Level:   views.AlertLvlError,
+			Message: "You entered an invalid One-Time Password",
 		}
 		vd.User = user
-		fmt.Println("Re-Rendering VerifyOTP after new code request")
 		u.VerifyP.Render(w, r, vd)
-	default:
+		return
 	}
+	vd.User = user
+	http.Redirect(w, r, "/userhome", http.StatusFound)
+	// u.UserHome.Render(w, r, vd)
 }
 
 func (u *UsersController) Home(w http.ResponseWriter, r *http.Request) {
@@ -282,7 +257,7 @@ func RequireSession(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-func verifyOTP(hash []byte, otp string) bool {
+func compareHashAndOTP(hash []byte, otp string) bool {
 	return bcrypt.CompareHashAndPassword(hash, []byte(otp)) == nil
 }
 

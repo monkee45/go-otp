@@ -36,7 +36,7 @@ func (err ErrEmailTaken) Error() string {
 }
 
 func (err ErrUserNotExist) Error() string {
-	return fmt.Sprintf("User address %q does not exist", err.Email)
+	return fmt.Sprintf("User email address %q does not exist", err.Email)
 }
 
 func (userService *UserService) Create(user *User) error {

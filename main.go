@@ -51,8 +51,9 @@ func main() {
 
 	mux.HandleFunc("GET /signin", usersC.SignIn)
 	mux.HandleFunc("POST /signin", usersC.ProcessSignIn)
-	mux.HandleFunc("GET /verify", usersC.VerifyOTP)
+	mux.HandleFunc("GET /verify", usersC.GetUserOTP)
 	mux.HandleFunc("POST /verify", usersC.ConfirmOTP)
+	mux.HandleFunc("POST /resend", usersC.ProcessSignIn)
 
 	mux.HandleFunc("GET /userhome", controllers.RequireSession(usersC.Home))
 	mux.HandleFunc("GET /logout", usersC.Logout)
